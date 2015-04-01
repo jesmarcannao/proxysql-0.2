@@ -282,8 +282,8 @@ int MySQL_Session::handler() {
 		proxy_debug(PROXY_DEBUG_MYSQL_CONNECTION, 5, "Processing session %p without client_myds\n", this);
 		assert(mybe);
 		assert(mybe->server_myds);
-		assert(mybe->server_myds->myconn);
 		if (mybe->server_myds->DSS==STATE_PING_SENT_NET) {
+			assert(mybe->server_myds->myconn);
 			proxy_debug(PROXY_DEBUG_MYSQL_CONNECTION, 5, "Processing session %p without client_myds . server_myds=%p , myconn=%p , fd=%d , timeout=%llu , curtime=%llu\n", this, mybe->server_myds , mybe->server_myds->myconn, mybe->server_myds->myconn->fd , mybe->server_myds->timeout , thread->curtime);
 			//fprintf(stderr,"Processing session %p without client_myds . server_myds=%p , myconn=%p , fd=%d , timeout=%llu , curtime=%llu , time=%llu\n", this, mybe->server_myds , mybe->server_myds->myconn, mybe->server_myds->myconn->fd , mybe->server_myds->timeout , thread->curtime, monotonic_time());
 			if (mybe->server_myds->timeout < thread->curtime) {
@@ -377,6 +377,9 @@ int MySQL_Session::handler() {
 								break;
 							case _MYSQL_COM_CHANGE_USER:
 								handler___status_WAITING_CLIENT_DATA___STATE_SLEEP___MYSQL_COM_CHANGE_USER(&pkt, &wrong_pass);
+								break;
+							case _MYSQL_COM_STMT_PREPARE:
+								handler___status_WAITING_CLIENT_DATA___STATE_SLEEP___MYSQL_COM_STMT_PREPARE(&pkt);
 								break;
 							case _MYSQL_COM_STMT_EXECUTE:
 								handler___status_WAITING_CLIENT_DATA___STATE_SLEEP___MYSQL_COM_STMT_EXECUTE(&pkt);
@@ -1357,7 +1360,7 @@ void MySQL_Session::handler___status_WAITING_CLIENT_DATA___STATE_SLEEP___MYSQL_C
 			client_myds->myprot.generate_pkt_OK(true,NULL,NULL,1,0,0,0,0,NULL);
 			client_myds->DSS=STATE_SLEEP;
 			status=WAITING_CLIENT_DATA;
-			wrong_pass=false;
+			*wrong_pass=false;
 		} else {
 			l_free(pkt->size,pkt->ptr);
 			proxy_debug(PROXY_DEBUG_MYSQL_CONNECTION, 5, "Wrong credentials for frontend: disconnecting\n");

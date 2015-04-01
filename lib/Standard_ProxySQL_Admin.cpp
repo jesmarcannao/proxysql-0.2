@@ -1162,6 +1162,9 @@ void *child_mysql(void *arg) {
 	pthread_mutex_unlock(&sock_mutex);
 //	MySQL_Thread *mysql_thr=create_MySQL_Thread_func();
 	Standard_MySQL_Thread *mysql_thr=new Standard_MySQL_Thread();
+	//mysql_thr->mysql_sessions = new PtrArray();
+	mysql_thr->curtime=monotonic_time();
+	GloQPro->init_thread();
 	mysql_thr->refresh_variables();
 	MySQL_Session *sess=mysql_thr->create_new_session_and_client_data_stream(client);
 	sess->thread=mysql_thr;
@@ -1217,7 +1220,7 @@ void *child_mysql(void *arg) {
 	}
 
 __exit_child_mysql:
-	delete sess;
+	//delete sess;
 	if (mysql_thread___default_schema) { free(mysql_thread___default_schema); mysql_thread___default_schema=NULL; }
 	if (mysql_thread___server_version) { free(mysql_thread___server_version); mysql_thread___server_version=NULL; }
 	delete mysql_thr;	
@@ -1578,18 +1581,28 @@ bool Standard_ProxySQL_Admin::init() {
 		GloVars.global.gdbg=true;
 	}
 #endif /* DEBUG */
-	flush_mysql_variables___database_to_runtime(admindb,true);
 
 	if (GloVars.__cmd_proxysql_reload || GloVars.__cmd_proxysql_initial) {
-			if (GloVars.configfile_open) {
-			Read_MySQL_Servers_from_configfile();	
-			Read_MySQL_Users_from_configfile();
-			Read_Global_Variables_from_configfile("admin");
-			Read_Global_Variables_from_configfile("mysql");
-			__insert_or_replace_disktable_select_maintable();
+		if (GloVars.configfile_open) {
+			if (GloVars.confFile->cfg) { 
+ 				Read_MySQL_Servers_from_configfile();	
+				Read_MySQL_Users_from_configfile();
+				Read_Global_Variables_from_configfile("admin");
+				Read_Global_Variables_from_configfile("mysql");
+				__insert_or_replace_disktable_select_maintable();
+			} else {
+				if (GloVars.confFile->OpenFile(GloVars.config_file)==true) {		
+ 					Read_MySQL_Servers_from_configfile();	
+					Read_MySQL_Users_from_configfile();
+					Read_Global_Variables_from_configfile("admin");
+					Read_Global_Variables_from_configfile("mysql");
+					__insert_or_replace_disktable_select_maintable();
+				}
+			}
 		}
 	}
-
+	flush_admin_variables___database_to_runtime(admindb,true);
+	flush_mysql_variables___database_to_runtime(admindb,true);
 
 //	S_amll.update_ifaces(variables.mysql_ifaces, &S_amll.descriptor_new.mysql_ifaces);
 //	S_amll.update_ifaces(variables.telnet_admin_ifaces, &S_amll.descriptor_new.telnet_admin_ifaces);
