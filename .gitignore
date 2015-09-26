@@ -2,6 +2,7 @@
 *.o
 *.ko
 *.oo
+*.pyc
 
 # Libraries
 *.lib
@@ -29,7 +30,6 @@ oldcode/tests/connect_speed
 *.swp
 
 
-
 # SQLITE files
 *.db
 *.db-shm
@@ -43,6 +43,8 @@ oldcode/tests/connect_speed
 
 #binary
 proxysql
+binaries/*deb
+binaries/*rpm
 
 #core
 core
@@ -74,12 +76,13 @@ deps/libdaemon/libdaemon-0.14/
 deps/mariadb-client-library/mariadb_client-2.0.0-Linux-x86/
 deps/mariadb-client-library/mariadb_client-2.0.0-Linux-x86_64/
 deps/mariadb-client-library/mariadb_client-2.0.0-src/
+deps/mariadb-client-library/mariadb-connector-c-2.1.0-src/
 
 #glib
 deps/glib/glib-2.40.0/
 
 #libevent
-deps/libevent/libevent-2.0.21-stable/
+deps/libevent/libevent-2.0.22-stable/
 
 #memcached
 deps/memcached/memcached-1.4.20/
@@ -89,3 +92,7 @@ deps/libconfig/libconfig-1.4.9/
 
 #re2
 deps/re2/re2/
+
+test/.vagrant
+.DS_Store
+proxysql-tests.ini

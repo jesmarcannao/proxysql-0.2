@@ -1,11 +1,13 @@
 #include "proxysql.h"
 #include "cpp.h"
 
+#define USLEEP_SQLITE_LOCKED 100
 
 SQLite3DB::SQLite3DB() {
 	db=NULL;
 	url=NULL;
 	assert_on_error=0;
+	spinlock_rwlock_init(&rwlock);
 }
 
 SQLite3DB::~SQLite3DB() {
@@ -68,7 +70,12 @@ bool SQLite3DB::execute_statement(const char *str, char **error, int *cols, int 
 	*cols = sqlite3_column_count(statement);
 	if (*cols==0) { // not a SELECT
 		*resultset=NULL;
-		rc=sqlite3_step(statement);
+		do {
+			rc=sqlite3_step(statement);
+			if (rc==SQLITE_LOCKED) { // the execution of the prepared statement failed because locked
+				usleep(USLEEP_SQLITE_LOCKED);
+			}
+		} while (rc==SQLITE_LOCKED);
 		if (rc==SQLITE_DONE) {
 			*affected_rows=sqlite3_changes(db);
 			ret=true;
@@ -86,6 +93,26 @@ __exit_execute_statement:
 	return ret;
 }
 
+int SQLite3DB::return_one_int(const char *str) {
+	char *error=NULL;
+	int cols=0;
+	int affected_rows=0;
+	int ret=0;
+	SQLite3_result *resultset=NULL;
+	execute_statement(str, &error , &cols , &affected_rows , &resultset);
+	if (error) {
+		proxy_error("Error on %s : %s\n", str, error);
+		free(error);
+	} else {
+		for (std::vector<SQLite3_row *>::iterator it = resultset->rows.begin() ; it != resultset->rows.end(); ++it) {
+			SQLite3_row *r=*it;
+			ret=atoi(r->fields[0]);
+			break;
+		}
+	}
+	if (resultset) delete resultset;
+	return ret;
+}
 
 int SQLite3DB::check_table_structure(char *table_name, char *table_def) {
 	const char *q1="SELECT COUNT(*) FROM sqlite_master WHERE type=\"table\" AND name=\"%s\" AND sql=\"%s\"";
@@ -135,3 +162,18 @@ bool SQLite3DB::check_and_build_table(char *table_name, char *table_def) {
 	return rcb;
 }
 
+void SQLite3DB::rdlock() {
+	spin_wrlock(&rwlock);
+}
+
+void SQLite3DB::rdunlock() {
+	spin_wrunlock(&rwlock);
+}
+
+void SQLite3DB::wrlock() {
+	spin_wrlock(&rwlock);
+}
+
+void SQLite3DB::wrunlock() {
+	spin_wrunlock(&rwlock);
+}

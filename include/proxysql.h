@@ -1,5 +1,6 @@
 #ifdef __cplusplus
 #include <string>
+#include <stack>
 #include "btree_map.h"
 #ifndef EZOPTION
 //#include "ezOptionParser.hpp"
@@ -19,7 +20,7 @@
 #include <assert.h>
 #include <unistd.h>
 #include <sys/socket.h>
-#include <resolv.h>
+//#include <resolv.h>
 #include <arpa/inet.h>
 #include <pthread.h>
 #include <sys/wait.h>
@@ -83,8 +84,8 @@
 #else
 #define DEB ""
 #endif /* DEBUG */
-#define PROXYSQL_VERSION	"20140617" DEB
-#define PROXYSQL_CODENAME	"Hebe"
+#define PROXYSQL_VERSION	"20150902" DEB
+#define PROXYSQL_CODENAME	"Kleon"
 
 #ifndef PROXYSQL_FUNC_DEFS
 #define PROXYSQL_FUNC_DEFS

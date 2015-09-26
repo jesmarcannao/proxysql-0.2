@@ -4,6 +4,27 @@
 #include "proxysql.h"
 #include "cpp.h"
 
+class MySQL_ResultSet {
+	private:
+	public:
+	bool transfer_started;
+	bool resultset_completed;
+	uint8_t sid;
+	MySQL_Data_Stream *myds;
+	MySQL_Protocol *myprot;
+	MYSQL *mysql;
+	MYSQL_RES *result;
+	unsigned int num_fields;
+	unsigned int num_rows;
+	unsigned long long resultset_size;
+	PtrSizeArray *PSarrayOUT;
+	MySQL_ResultSet(MySQL_Protocol *_myprot, MYSQL_RES *_res, MYSQL *_my);
+	~MySQL_ResultSet();
+	unsigned int add_row(MYSQL_ROW row);
+	void add_eof();
+	bool get_resultset(PtrSizeArray *PSarrayFinal);
+};
+
 
 class MySQL_Prepared_Stmt_info {
 	public:
@@ -29,6 +50,9 @@ class MySQL_Protocol {
 	MySQL_Prepared_Stmt_info *current_PreStmt;
 	uint16_t prot_status;
 	MySQL_Data_Stream *get_myds() { return *myds; }
+	MySQL_Protocol() {
+		prot_status=0;
+	}
 	void init(MySQL_Data_Stream **, MySQL_Connection_userinfo *, MySQL_Session *);
 	int pkt_handshake_client(unsigned char *, unsigned int);
 	int parse_mysql_pkt(PtrSize_t *, MySQL_Data_Stream *);
@@ -52,8 +76,8 @@ class MySQL_Protocol {
 	bool generate_pkt_ERR(bool send, void **ptr, unsigned int *len, uint8_t sequence_id, uint16_t error_code, char *sql_state, char *sql_message);
 	bool generate_pkt_EOF(bool send, void **ptr, unsigned int *len, uint8_t sequence_id, uint16_t warnings, uint16_t status);
 	bool generate_COM_QUIT(bool send, void **ptr, unsigned int *len);
-	bool generate_COM_INIT_DB(bool send, void **ptr, unsigned int *len, char *schema);
-	bool generate_COM_PING(bool send, void **ptr, unsigned int *len);
+//	bool generate_COM_INIT_DB(bool send, void **ptr, unsigned int *len, char *schema);
+	//bool generate_COM_PING(bool send, void **ptr, unsigned int *len);
 	bool generate_COM_QUERY(bool send, void **ptr, unsigned int *len, char *query);
 	bool generate_COM_RESET_CONNECTION(bool send, void **ptr, unsigned int *len);
 	bool generate_COM_CHANGE_USER(bool send, void **ptr, unsigned int *len);
@@ -65,9 +89,10 @@ class MySQL_Protocol {
 	bool generate_pkt_column_count(bool send, void **ptr, unsigned int *len, uint8_t sequence_id, uint64_t count);
 //	bool generate_pkt_field(MySQL_Data_Stream *myds, bool send, void **ptr, unsigned int *len, uint8_t sequence_id, char *schema, char *table, char *org_table, char *name, char *org_name, uint16_t charset, uint32_t column_length, uint8_t type, uint16_t flags, uint8_t decimals, bool field_list, uint64_t defvalue_length, char *defvalue);
 	bool generate_pkt_field(bool send, void **ptr, unsigned int *len, uint8_t sequence_id, char *schema, char *table, char *org_table, char *name, char *org_name, uint16_t charset, uint32_t column_length, uint8_t type, uint16_t flags, uint8_t decimals, bool field_list, uint64_t defvalue_length, char *defvalue);
-	bool generate_pkt_row(bool send, void **ptr, unsigned int *len, uint8_t sequence_id, int colnums, int *fieldslen, char **fieldstxt);
+	bool generate_pkt_row(bool send, void **ptr, unsigned int *len, uint8_t sequence_id, int colnums, unsigned long *fieldslen, char **fieldstxt);
+	uint8_t generate_pkt_row2(PtrSizeArray *PSarrayOut, unsigned int *len, uint8_t sequence_id, int colnums, unsigned long *fieldslen, char **fieldstxt);
 //	bool generate_pkt_initial_handshake(MySQL_Data_Stream *myds, bool send, void **ptr, unsigned int *len);
-	bool generate_pkt_initial_handshake(bool send, void **ptr, unsigned int *len);
+	bool generate_pkt_initial_handshake(bool send, void **ptr, unsigned int *len, uint32_t *thread_id);
 //	bool generate_pkt_handshake_response(MySQL_Data_Stream *myds, bool send, void **ptr, unsigned int *len);
 	bool generate_pkt_handshake_response(bool send, void **ptr, unsigned int *len);
 //	bool generate_statistics_response(MySQL_Data_Stream *myds, bool send, void **ptr, unsigned int *len);
